@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OLS — Intuição visual</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#121a2d; --panel2:#0f1728; --text:#edf2ff; --muted:#aab6d3;
+  --line:#2a3655; --accent:#7dd3fc; --good:#86efac; --warn:#fcd34d;
+  --bad:#fca5a5; --ink:#07111e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#0b1020,#0d1426 65%,#0a1020);
+  color:var(--text);
+  font:15px/1.42 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+}
+.app{max-width:1180px;margin:0 auto;padding:18px}
+header{margin-bottom:16px}
+h1{font-size:clamp(24px,3vw,38px);margin:0 0 6px;letter-spacing:-.03em}
+.subtitle{color:var(--muted);max-width:900px}
+.card{
+  background:rgba(18,26,45,.94);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px
+}
+.stepper{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+button{
+  min-height:42px;border:1px solid var(--line);border-radius:11px;
+  background:#18223a;color:var(--text);font-weight:750;cursor:pointer;padding:9px 11px
+}
+.stepbtn{min-height:34px;padding:7px 10px;font-size:12px;color:var(--muted)}
+.stepbtn.active{background:#243552;color:var(--text);border-color:#5f789e}
+button.good{background:#173023;border-color:#356448;color:#caffdc}
+.olswrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:14px}
+.visual h3{margin:0 0 4px;font-size:16px}
+.visual .desc{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+canvas{
+  width:100%;height:420px;display:block;background:#0b1324;
+  border:1px solid var(--line);border-radius:12px
+}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:7px}
+.sw{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.group{margin-bottom:17px}.group:last-child{margin-bottom:0}
+.group-title{font-size:12px;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);font-weight:800;margin-bottom:9px}
+label{display:block;margin:9px 0 5px}
+.row{display:flex;gap:9px;align-items:center}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.value{min-width:62px;text-align:right;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
+.sliderhint{font-size:12px;color:var(--muted);margin-top:5px}
+.metricbox{display:grid;gap:10px}
+.bigmetric{background:#0b1324;border:1px solid var(--line);border-radius:13px;padding:13px}
+.bigmetric .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.bigmetric .num{font-size:30px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:4px}
+.eqline{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;line-height:1.7;color:#dce8ff}
+.explain{color:var(--muted);font-size:12px;margin-top:4px}
+.callout{padding:11px;border:1px solid var(--line);background:#101a2d;border-radius:12px}
+.callout b{color:var(--warn)}
+@media(max-width:900px){
+  .olswrap{grid-template-columns:1fr}
+}
+@media(max-width:540px){
+  .app{padding:10px}
+  canvas{height:320px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <h1>O que o OLS faz?</h1>
+  <div class="subtitle">
+    O método de mínimos quadrados escolhe a reta que torna a <b>soma dos quadrados dos resíduos</b> tão pequena quanto possível.
+  </div>
+</header>
+
+<div class="stepper">
+  <button class="stepbtn active" data-step="1">1. Dados</button>
+  <button class="stepbtn" data-step="2">2. Reta candidata</button>
+  <button class="stepbtn" data-step="3">3. Resíduos</button>
+  <button class="stepbtn" data-step="4">4. Quadrados</button>
+  <button class="stepbtn" data-step="5">5. Minimização</button>
+</div>
+
+<div class="olswrap">
+  <div class="card visual">
+    <h3 id="olsTitle">Comece pelos dados</h3>
+    <div class="desc" id="olsDesc">
+      Temos observações de x e y. Queremos escolher uma reta que resuma a relação entre as duas variáveis.
+    </div>
+    <canvas id="olsCanvas"></canvas>
+    <div class="legend" id="olsLegend">
+      <span><i class="sw" style="background:#edf2ff"></i>observações</span>
+    </div>
+  </div>
+
+  <div class="metricbox">
+    <div class="card">
+      <div class="group-title">Experimente uma reta</div>
+
+      <label for="aSlider">Intercepto β̂₀</label>
+      <div class="row">
+        <input id="aSlider" type="range" min="-2" max="3" step=".05" value=".4">
+        <span class="value" id="aVal">0,40</span>
+      </div>
+
+      <label for="bSlider">Inclinação β̂₁</label>
+      <div class="row">
+        <input id="bSlider" type="range" min="-1" max="3" step=".05" value=".7">
+        <span class="value" id="bVal">0,70</span>
+      </div>
+
+      <div class="sliderhint">
+        Mova a reta: a soma dos quadrados dos resíduos muda imediatamente.
+      </div>
+    </div>
+
+    <div class="bigmetric">
+      <div class="label">Soma dos quadrados dos resíduos</div>
+      <div class="num" id="ssrVal">—</div>
+      <div class="eqline">SSR = Σ eᵢ²</div>
+      <div class="explain">
+        Quanto menor, melhor a reta se ajusta aos pontos pelo critério de mínimos quadrados.
+      </div>
+    </div>
+
+    <div class="callout" id="stepText">
+      Por enquanto, apenas observe os pontos. Ainda não escolhemos nenhuma reta.
+    </div>
+
+    <button id="findOLS" class="good">Encontrar a reta OLS</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const C = {
+  bg:'#0b1324',
+  grid:'#22304d',
+  text:'#aab6d3',
+  white:'#edf2ff',
+  blue:'#7dd3fc',
+  yellow:'#fcd34d',
+  bad:'#fca5a5'
+};
+
+const ols = {
+  step:1,
+  x:[-2.4,-1.7,-1.1,-.4,.2,.8,1.4,2.0,2.5],
+  y:[-1.45,-.50,-.12,.35,1.25,1.15,2.55,2.75,3.65],
+  a:.4,
+  b:.7
+};
+
+function fmt(x,d=2){
+  return x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+
+function fitOLS(){
+  const n=ols.x.length;
+  const mx=ols.x.reduce((a,b)=>a+b,0)/n;
+  const my=ols.y.reduce((a,b)=>a+b,0)/n;
+
+  let sxx=0,sxy=0;
+  for(let i=0;i<n;i++){
+    const dx=ols.x[i]-mx;
+    sxx+=dx*dx;
+    sxy+=dx*(ols.y[i]-my);
+  }
+
+  const b=sxy/sxx;
+  const a=my-b*mx;
+  return {a,b};
+}
+
+const best=fitOLS();
+
+function ssr(a=ols.a,b=ols.b){
+  let s=0;
+  for(let i=0;i<ols.x.length;i++){
+    const e=ols.y[i]-(a+b*ols.x[i]);
+    s+=e*e;
+  }
+  return s;
+}
+
+function resizeCanvas(c){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const r=c.getBoundingClientRect();
+  const w=Math.max(280,Math.floor(r.width));
+  const h=Math.max(180,Math.floor(r.height));
+
+  c.width=Math.floor(w*dpr);
+  c.height=Math.floor(h*dpr);
+
+  const ctx=c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+
+function clear(c){
+  const {ctx,w,h}=resizeCanvas(c);
+  ctx.fillStyle=C.bg;
+  ctx.fillRect(0,0,w,h);
+  return {ctx,w,h};
+}
+
+function line(ctx,x1,y1,x2,y2,color,width=2,dash=[]){
+  ctx.save();
+  ctx.strokeStyle=color;
+  ctx.lineWidth=width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function setStep(k){
+  ols.step=k;
+
+  $$('.stepbtn').forEach(b=>{
+    b.classList.toggle('active',+b.dataset.step===k);
+  });
+
+  const titles={
+    1:[
+      'Comece pelos dados',
+      'Temos observações de x e y. Queremos resumir a relação entre as duas variáveis com uma reta.'
+    ],
+    2:[
+      'Escolha uma reta candidata',
+      'Uma reta produz uma previsão ŷᵢ para cada valor de x. Altere o intercepto e a inclinação nos controles ao lado.'
+    ],
+    3:[
+      'Meça os resíduos',
+      'Para cada ponto, o resíduo é a distância vertical entre o valor observado yᵢ e o valor previsto ŷᵢ.'
+    ],
+    4:[
+      'Eleve os resíduos ao quadrado',
+      'O OLS não soma simplesmente os resíduos: positivos e negativos poderiam se cancelar. Por isso usamos eᵢ².'
+    ],
+    5:[
+      'Escolha a reta que minimiza a soma',
+      'OLS = Ordinary Least Squares: escolhemos β̂₀ e β̂₁ para tornar Σeᵢ² tão pequena quanto possível.'
+    ]
+  };
+
+  $('#olsTitle').textContent=titles[k][0];
+  $('#olsDesc').textContent=titles[k][1];
+
+  const texts={
+    1:'Por enquanto, apenas observe os pontos. Ainda não escolhemos nenhuma reta.',
+    2:'A reta transforma cada xᵢ em uma previsão ŷᵢ = β̂₀ + β̂₁xᵢ.',
+    3:'Cada segmento vermelho é um resíduo: eᵢ = yᵢ − ŷᵢ.',
+    4:'Quadrar evita o cancelamento entre resíduos positivos e negativos e dá mais peso aos erros grandes.',
+    5:'A reta azul clara é a solução OLS: entre todas as retas possíveis, ela minimiza a soma dos quadrados dos resíduos.'
+  };
+
+  $('#stepText').innerHTML = k===5 ? '<b>Resultado:</b> '+texts[k] : texts[k];
+  drawOLS();
+}
+
+function drawOLS(){
+  const c=$('#olsCanvas');
+  const {ctx,w,h}=clear(c);
+  const pad={l:48,r:18,t:18,b:34};
+
+  const xmin=-3,xmax=3,ymin=-2.5,ymax=4.5;
+
+  const X=x=>pad.l+(x-xmin)/(xmax-xmin)*(w-pad.l-pad.r);
+  const Y=y=>h-pad.b-(y-ymin)/(ymax-ymin)*(h-pad.t-pad.b);
+
+  for(let i=0;i<=6;i++){
+    const x=pad.l+(w-pad.l-pad.r)*i/6;
+    line(ctx,x,pad.t,x,h-pad.b,C.grid,1);
+
+    ctx.fillStyle=C.text;
+    ctx.font='11px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText((xmin+(xmax-xmin)*i/6).toFixed(0),x,h-9);
+  }
+
+  for(let i=0;i<=5;i++){
+    const y=pad.t+(h-pad.t-pad.b)*i/5;
+    line(ctx,pad.l,y,w-pad.r,y,C.grid,1);
+
+    ctx.fillStyle=C.text;
+    ctx.textAlign='right';
+    ctx.fillText((ymax-(ymax-ymin)*i/5).toFixed(1),pad.l-7,y+4);
+  }
+
+  if(ols.step>=2){
+    const col=ols.step===5?C.blue:C.yellow;
+    line(
+      ctx,
+      X(xmin),Y(ols.a+ols.b*xmin),
+      X(xmax),Y(ols.a+ols.b*xmax),
+      col,2.7
+    );
+  }
+
+  if(ols.step>=3){
+    for(let i=0;i<ols.x.length;i++){
+      const x=ols.x[i];
+      const y=ols.y[i];
+      const yhat=ols.a+ols.b*x;
+
+      line(ctx,X(x),Y(y),X(x),Y(yhat),C.bad,2);
+
+      if(ols.step>=4){
+        const e=Math.abs(y-yhat);
+        const sq=Math.min(20,5+e*7);
+
+        ctx.fillStyle='rgba(252,165,165,.18)';
+        ctx.strokeStyle='rgba(252,165,165,.70)';
+        ctx.lineWidth=1;
+
+        ctx.fillRect(
+          X(x)+5,
+          Math.min(Y(y),Y(yhat)),
+          sq,sq
+        );
+        ctx.strokeRect(
+          X(x)+5,
+          Math.min(Y(y),Y(yhat)),
+          sq,sq
+        );
+      }
+    }
+  }
+
+  ctx.fillStyle=C.white;
+  for(let i=0;i<ols.x.length;i++){
+    ctx.beginPath();
+    ctx.arc(X(ols.x[i]),Y(ols.y[i]),4,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  if(ols.step>=2){
+    ctx.fillStyle=C.white;
+    ctx.font='bold 12px system-ui';
+    ctx.textAlign='left';
+    ctx.fillText(
+      `ŷ = ${fmt(ols.a,2)} + ${fmt(ols.b,2)}x`,
+      pad.l+8,pad.t+17
+    );
+  }
+
+  if(ols.step>=3){
+    const i=5;
+    const x=ols.x[i];
+    const y=ols.y[i];
+    const yhat=ols.a+ols.b*x;
+
+    ctx.fillStyle=C.bad;
+    ctx.font='bold 11px system-ui';
+    ctx.textAlign='left';
+    ctx.fillText('eᵢ',X(x)+7,(Y(y)+Y(yhat))/2);
+  }
+
+  $('#ssrVal').textContent=fmt(ssr(),2);
+
+  const legend=[];
+  legend.push('<span><i class="sw" style="background:#edf2ff"></i>observações</span>');
+
+  if(ols.step>=2){
+    legend.push(
+      `<span><i class="sw" style="background:${ols.step===5?'#7dd3fc':'#fcd34d'}"></i>${ols.step===5?'reta OLS':'reta candidata'}</span>`
+    );
+  }
+
+  if(ols.step>=3){
+    legend.push('<span><i class="sw" style="background:#fca5a5"></i>resíduos</span>');
+  }
+
+  $('#olsLegend').innerHTML=legend.join('');
+}
+
+function updateCandidate(){
+  ols.a=+$('#aSlider').value;
+  ols.b=+$('#bSlider').value;
+
+  $('#aVal').textContent=fmt(ols.a,2);
+  $('#bVal').textContent=fmt(ols.b,2);
+
+  if(ols.step<2){
+    setStep(2);
+  }else{
+    drawOLS();
+  }
+}
+
+$('#aSlider').addEventListener('input',updateCandidate);
+$('#bSlider').addEventListener('input',updateCandidate);
+
+$$('.stepbtn').forEach(b=>{
+  b.addEventListener('click',()=>setStep(+b.dataset.step));
+});
+
+$('#findOLS').addEventListener('click',()=>{
+  ols.a=best.a;
+  ols.b=best.b;
+
+  $('#aSlider').value=ols.a;
+  $('#bSlider').value=ols.b;
+
+  $('#aVal').textContent=fmt(ols.a,2);
+  $('#bVal').textContent=fmt(ols.b,2);
+
+  setStep(5);
+});
+
+window.addEventListener('resize',drawOLS);
+
+$('#aVal').textContent=fmt(ols.a,2);
+$('#bVal').textContent=fmt(ols.b,2);
+setStep(1);
+})();
+</script>
+
+</body>
+</html>
