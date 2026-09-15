@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hipóteses 2–5 do MQO</title>
+<meta name="author" content="Bruno Sales - Econometria" />
+<style>
+  :root {
+    --bg: #f7f9fc;
+    --surface: #ffffff;
+    --surface-2: #eef4fb;
+    --line: #d6e2f0;
+    --text: #15314b;
+    --text-soft: #5c7188;
+    --text-faint: #7e93a8;
+    --primary: #163a63;
+    --primary-2: #244f82;
+    --accent: #23a6d5;
+    --success: #2f8f6b;
+    --warning: #c9871c;
+    --danger: #c95a5a;
+    --purple: #7a5cc2;
+    --orange: #d97706;
+    --shadow-soft: 0 10px 30px rgba(21,49,75,.08);
+    --shadow-card: 0 8px 20px rgba(21,49,75,.06);
+    --font-title: "Segoe UI", "Inter", Arial, sans-serif;
+    --font-body: "Segoe UI", "Inter", Arial, sans-serif;
+    --font-math: "Cambria Math", "Times New Roman", serif;
+    --slide-max-width: 1560px;
+    --slide-max-height: 450px;
+    --transition-fast: 220ms ease;
+    --transition-mid: 420ms ease;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    background: linear-gradient(180deg,#f9fbfe 0%,#f3f7fc 100%);
+    color: var(--text); font-family: var(--font-body);
+  }
+  .app { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px 6px 18px;
+    background: linear-gradient(180deg, rgba(247,249,252,.96) 0%, rgba(247,249,252,.75) 70%, rgba(247,249,252,0) 100%);
+    backdrop-filter: blur(4px);
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-soft); }
+  .brand-mark { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 4px rgba(35,166,213,.12); }
+  .brand strong { color: var(--primary); font-weight: 700; letter-spacing: .02em; }
+  .slide-meta { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-soft); }
+  .slide-counter { padding: 4px 8px; border-radius: 999px; background: rgba(22,58,99,.08); color: var(--primary); font-weight: 600; }
+  .progress-wrap {
+    position: fixed; top: 40px; left: 18px; right: 18px; z-index: 20; height: 4px;
+    background: rgba(22,58,99,.08); border-radius: 999px; overflow: hidden;
+  }
+  .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg,var(--primary),var(--accent)); transition: width var(--transition-mid); }
+  .slides { position: absolute; inset: 0; }
+  .slide {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    padding: 46px 6px 68px;
+  }
+  .slide.active { display: flex; animation: fade .42s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+  .slide-frame {
+    width: min(100%, var(--slide-max-width));
+    height: min(var(--slide-max-height), calc(100vh - 126px));
+    max-height: calc(100vh - 126px);
+    aspect-ratio: 16 / 5.3;
+    min-height: 0;
+    position: relative; overflow: hidden;
+    padding: 12px 16px;
+    border-radius: 24px;
+    border: 1px solid rgba(214,226,240,.8);
+    background: rgba(255,255,255,.78);
+    box-shadow: var(--shadow-soft);
+  }
+  .slide-frame::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at top right, rgba(35,166,213,.08), transparent 26%),
+      radial-gradient(circle at bottom left, rgba(22,58,99,.06), transparent 22%);
+  }
+  .slide-inner { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .question-bar {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 16px;
+    border: 1px solid rgba(35,166,213,.16); background: rgba(255,255,255,.78); box-shadow: var(--shadow-card);
+  }
+  .question-accent { width: 6p
